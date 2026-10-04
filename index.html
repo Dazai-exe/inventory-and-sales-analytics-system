@@ -9,17 +9,35 @@
 </head>
 
 <body>
+  <!-- Elegant opening transition -->
+  <div id="siteOpening" class="site-opening" aria-hidden="true">
+    <div class="opening-orbit orbit-1"></div>
+    <div class="opening-orbit orbit-2"></div>
+    <div class="opening-bottle" aria-hidden="true">
+      <span class="opening-cap"></span>
+      <span class="opening-neck"></span>
+      <span class="opening-body"></span>
+      <span class="opening-label">RÉVE</span>
+    </div>
+    <div class="opening-copy">
+      <small>MAISON RÉVE • FINE FRAGRANCE</small>
+      <h2>Welcome <span class="dash">—</span> <em>Reverie</em></h2>
+      <p>A world of scent, elegance, and quiet expression.</p>
+      <i class="opening-line"></i>
+    </div>
+  </div>
   <div class="ambient a1"></div>
   <div class="ambient a2"></div>
   <header class="header">
     <div class="brand" id="secretLogo" title="Maison Réve — private access" tabindex="0" role="button"
-      aria-label="Maison Réve logo"><img src="assets/logo.svg" alt="Maison Réve"></div><span id="secretClickHint"
-      class="secret-click-hint" aria-hidden="true"></span>
+      aria-label="Maison Réve logo"><img src="assets/logo.png" alt="Maison Réve"></div>
     <nav><a class="active" href="#home">Home</a><a href="#fragrance">Fragrance</a><a href="#about">About</a></nav>
     <span class="system-mark">SCENT <b>•</b> Maison Réve</span>
   </header>
   <main>
     <section id="home" class="hero section">
+      <!-- Animated hero background: drifting light + rising scent particles (decorative only) -->
+      <div class="hero-motion" aria-hidden="true"><i></i><i></i><i></i><i></i><b></b><b></b><b></b><b></b><b></b><b></b></div>
       <div class="hero-copy">
         <p class="eyebrow">MAISON RÉVE • FINE FRAGRANCE</p>
         <h1>A scent that becomes<br><em>part of your story.</em></h1>
@@ -45,7 +63,12 @@
         <h2>Our Most Loved Scents</h2>
         <p>Five fragrances currently leading the Maison Réve collection.</p>
       </div>
-      <div id="topFive" class="top-grid"></div>
+      <div class="top-carousel" aria-label="Our Most Loved Scents carousel">
+        <button type="button" class="carousel-btn carousel-prev" id="topPrev" aria-label="Previous loved scent">‹</button>
+        <div id="topFive" class="top-carousel-stage"></div>
+        <button type="button" class="carousel-btn carousel-next" id="topNext" aria-label="Next loved scent">›</button>
+      </div>
+      <div class="carousel-dots" id="topDots" aria-label="Carousel position"></div>
     </section>
     <section id="fragrance" class="fragrance section">
       <div class="heading">
@@ -162,8 +185,7 @@
         </div>
         <div id="lgOtpStatus" class="lg-otp-status" aria-live="polite"></div>
         <button type="submit" class="lg-primary">Verify &amp; Sign In</button>
-        <p class="lg-demo"><strong>Demo email:</strong> admin@maisonreve.com &nbsp; <strong>Password:</strong> admin123</p>
-        <div id="lgDemoOtp" class="lg-demo-otp" hidden></div>
+                <div id="lgDemoOtp" class="lg-demo-otp" hidden></div>
         <p id="lgError" class="lg-error" aria-live="polite"></p>
       </form>
     </div>
@@ -184,7 +206,7 @@
       <div class="welcome-bar"><i></i></div>
     </div>
   </div>
-  <script src="js/store.js"></script>
+  <script src="js/api.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>

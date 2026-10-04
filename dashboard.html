@@ -166,7 +166,7 @@
             <div>
               <p class="eyebrow">TAB 02</p>
               <h1>Stock Control</h1>
-              <p>Click a product to deduct units from the inventory. Every deduction is recorded as a sales transaction.</p>
+              <p>Add one or more fragrances to the sales cart, set each quantity, then complete the purchase in one checkout. A receipt is generated automatically.</p>
             </div>
             <svg class="hero-bottles" viewBox="0 0 300 200" aria-hidden="true">
               <use href="#bt-c" x="10" y="50" width="88" height="146" />
@@ -189,6 +189,11 @@
                 <option>Preferred by Both</option>
               </select>
               <span class="muted" id="scCount"></span>
+            </div>
+            <!-- Sales cart summary: always visible while shopping the grid -->
+            <div class="cart-strip" id="cartSummaryStrip">
+              <div class="cart-strip-info"><span><b id="cartSummaryItems">0</b> products</span><span><b id="cartSummaryUnits">0</b> units</span><span>Total <b id="cartSummaryTotal">₱0</b></span></div>
+              <button type="button" class="btn dark" id="cartOpen">View Cart (<span id="cartCount">0</span>)</button>
             </div>
             <div class="sc-grid" id="scGrid"></div>
             <div class="empty" id="scEmpty" hidden>No fragrances match your search.</div>
@@ -223,7 +228,6 @@
               <div class="export">
                 <span>Print report:</span>
                 <button class="btn small" data-export="pdf">PDF</button>
-                <button class="btn small" data-export="png">PNG</button>
                 <button class="btn small" data-export="jpeg">JPEG</button>
               </div>
             </div>
@@ -268,6 +272,18 @@
               </div>
             </div>
           </div>
+
+          <!-- VOID ORDER: cancel / return an order; restocks inventory and removes it from revenue -->
+          <div class="panel" id="voidPanel">
+            <div class="an-head">
+              <div><h2>Void order</h2><p class="muted" id="voidNote"></p></div>
+              <label class="search void-search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" /><path d="M20 20l-4-4" /></svg>
+                <input id="voidSearch" type="search" placeholder="Search order ID, customer or product…" autocomplete="off" /></label>
+            </div>
+            <div class="void-list" id="voidList"></div>
+            <h3 class="void-sub">Voided orders</h3>
+            <div class="void-list voided" id="voidHistory"></div>
+          </div>
         </section>
 
         <!-- 04 ACCOUNTS -->
@@ -300,10 +316,6 @@
                 <tbody id="acBody"></tbody>
               </table>
             </div>
-            <p class="hint">
-              Demo data is stored in this browser only.
-              <button class="link" id="resetDemo">Reset demo data</button>
-            </p>
           </div>
         </section>
 
@@ -383,23 +395,87 @@
             <div><small>In stock</small><strong id="sdStock"></strong></div>
             <div><small>Unit price</small><strong id="sdPrice"></strong></div>
           </div>
-          <label class="sd-qty">Quantity to deduct
+          <label class="sd-qty">Quantity
             <div class="stepper">
               <button type="button" id="sdMinus" aria-label="Decrease">−</button>
               <input id="sdQty" type="number" min="1" step="1" value="1" inputmode="numeric" />
               <button type="button" id="sdPlus" aria-label="Increase">+</button>
             </div>
           </label>
+          <label class="sd-cust">Customer name (optional)<input id="sdCustomer" maxlength="40" placeholder="Walk-in customer" autocomplete="off" /></label>
           <div class="sd-sum">
-            <div><span>Units to deduct</span><strong id="sdUnits">1</strong></div>
+            <div><span>Units to add</span><strong id="sdUnits">1</strong></div>
             <div><span>Total sum</span><strong id="sdTotal"></strong></div>
-            <div><span>Remaining after deduction</span><strong id="sdAfter"></strong></div>
+            <div><span>Remaining after this sale</span><strong id="sdAfter"></strong></div>
           </div>
           <p class="error" id="sdError"></p>
           <div class="dlg-actions">
             <button type="button" class="btn" data-close>Cancel</button>
-            <button type="submit" class="btn dark" id="sdDeduct">Deduct Product</button>
+            <button type="submit" class="btn dark" id="sdDeduct">Add to Cart</button>
           </div>
+        </div>
+      </form>
+    </dialog>
+
+    <!-- Sales cart: edit quantities, then complete one purchase for all items -->
+    <dialog id="cartDialog">
+      <form class="dlg cart" id="cartForm" novalidate>
+        <button type="button" class="dlg-x" data-close aria-label="Close">×</button>
+        <p class="eyebrow">SALES CART</p>
+        <h2>Complete Purchase</h2>
+        <div id="cartItems"></div>
+        <label class="cart-cust">Customer name (optional)<input id="cartCustomer" maxlength="40" placeholder="Walk-in customer" autocomplete="off" /></label>
+        <div class="sd-sum">
+          <div><span>Products</span><strong id="cartDialogTypes">0</strong></div>
+          <div><span>Units</span><strong id="cartDialogUnits">0</strong></div>
+          <div><span>Subtotal</span><strong id="cartDialogTotal">₱0</strong></div>
+          <div><span>Grand total</span><strong id="cartDialogGrand">₱0</strong></div>
+        </div>
+        <p class="error" id="cartError"></p>
+        <div class="dlg-actions">
+          <button type="button" class="btn" data-close>Keep Shopping</button>
+          <button type="submit" class="btn dark">Complete Purchase</button>
+        </div>
+      </form>
+    </dialog>
+
+    <!-- Receipt generator output (print / save as PDF from the browser print dialog) -->
+    <dialog id="receiptDialog">
+      <div class="dlg receipt-dlg">
+        <button type="button" class="dlg-x" data-close aria-label="Close">×</button>
+        <div id="receiptPreview"></div>
+        <div class="dlg-actions">
+          <button type="button" class="btn" data-close>Close</button>
+          <button type="button" class="btn dark" id="receiptPrint">Print / Save PDF</button>
+        </div>
+      </div>
+    </dialog>
+
+    <!-- Void order dialog -->
+    <dialog id="voidDialog">
+      <form class="dlg voiding" id="voidForm" novalidate>
+        <button type="button" class="dlg-x" data-close aria-label="Close">×</button>
+        <p class="eyebrow">VOID ORDER</p>
+        <h2 id="voidTitle"></h2>
+        <div id="voidSummary" class="void-summary"></div>
+        <label class="full">Reason *
+          <select id="voidReason">
+            <option value="">Select a reason…</option>
+            <option>Customer cancelled the order</option>
+            <option>Returned by customer</option>
+            <option>Damaged or defective product</option>
+            <option>Wrong item or wrong quantity</option>
+            <option>Payment failed or refunded</option>
+            <option>Encoding / cashier error</option>
+            <option>Duplicate transaction</option>
+          </select>
+        </label>
+        <label class="void-check"><input type="checkbox" id="voidRestock" checked /> Return the items to inventory stock</label>
+        <label class="full">Note (optional)<input id="voidExtra" maxlength="80" placeholder="Anything the team should know" /></label>
+        <p class="error" id="voidError"></p>
+        <div class="dlg-actions">
+          <button type="button" class="btn" data-close>Cancel</button>
+          <button type="submit" class="btn danger">Void Order</button>
         </div>
       </form>
     </dialog>
@@ -420,7 +496,7 @@
     <div class="tooltip" id="tip" hidden></div>
     <div class="toasts" id="toasts" aria-live="polite"></div>
 
-    <script src="js/store.js"></script>
+    <script src="js/api.js"></script>
     <script src="js/dashboard.js"></script>
   </body>
 </html>

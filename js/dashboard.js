@@ -27,10 +27,10 @@
   const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   const imgOf = (p) =>
-    p.image || (p.id <= 50 ? `assets/products/product-${String(p.id).padStart(2, "0")}.svg` : "assets/logo.svg");
+    p.image || (p.id <= 50 ? `assets/products/product-${String(p.id).padStart(2, "0")}.png` : "assets/logo.png");
   const imgByPid = (pid) => {
     const p = products.find((x) => x.id === pid);
-    return p ? imgOf(p) : pid <= 50 ? `assets/products/product-${String(pid).padStart(2, "0")}.svg` : "assets/logo.svg";
+    return p ? imgOf(p) : pid <= 50 ? `assets/products/product-${String(pid).padStart(2, "0")}.png` : "assets/logo.png";
   };
 
   // default "photo" for each account (a neat silhouette)
@@ -59,7 +59,7 @@
 
   /* ---------- state ---------- */
   let products = Store.getProducts();
-  let transactions = Store.getTransactions();
+  let transactions = Store.getTransactions().filter((t) => !t.voided); // voided orders never count as revenue
 
   /* ---------- dialogs ---------- */
   $$("dialog").forEach((d) => {
@@ -369,10 +369,39 @@
   });
 
   /* =========================================================
-     TAB 2 — STOCK CONTROL
+     TAB 2 — STOCK CONTROL + MULTI-PRODUCT SALES CART
      ========================================================= */
   let scQuery = "";
   let scCat = "all";
+  const salesCart = new Map(); // product id -> { id, qty }
+
+  function cartEntries() {
+    return [...salesCart.values()]
+      .map((item) => {
+        const p = products.find((x) => x.id === item.id);
+        return p ? { ...item, product: p } : null;
+      })
+      .filter(Boolean);
+  }
+
+  function cartStats() {
+    const entries = cartEntries();
+    return {
+      types: entries.length,
+      units: entries.reduce((sum, x) => sum + x.qty, 0),
+      total: entries.reduce((sum, x) => sum + x.qty * x.product.price, 0),
+    };
+  }
+
+  function renderCartSummary() {
+    const s = cartStats();
+    $("#cartCount").textContent = s.types;
+    $("#cartSummaryItems").textContent = s.types;
+    $("#cartSummaryUnits").textContent = s.units;
+    $("#cartSummaryTotal").textContent = peso(s.total);
+    const strip = $("#cartSummaryStrip");
+    if (strip) strip.classList.toggle("has-items", s.types > 0);
+  }
 
   function renderStockControl() {
     const q = scQuery.trim().toLowerCase();
@@ -384,16 +413,18 @@
     $("#scGrid").innerHTML = list
       .map((p) => {
         const a = Store.availability(p.stock);
+        const inCart = salesCart.get(p.id)?.qty || 0;
         const badge = p.stock === 0 ? "Out of stock" : p.stock <= Store.LOW_STOCK ? `Only ${p.stock} left` : `${p.stock} in stock`;
-        return `<article class="sc-card ${p.stock === 0 ? "out" : ""}" data-id="${p.id}" tabindex="0" role="button" aria-label="Deduct ${esc(p.name)}">
-          <div class="sc-img"><img src="${imgOf(p)}" alt="${esc(p.name)} perfume bottle"><span class="sc-badge ${a.key}">${badge}</span></div>
+        return `<article class="sc-card ${p.stock === 0 ? "out" : ""} ${inCart ? "in-cart" : ""}" data-id="${p.id}" tabindex="0" role="button" aria-label="Add ${esc(p.name)} to sales cart">
+          <div class="sc-img"><img src="${imgOf(p)}" alt="${esc(p.name)} perfume bottle"><span class="sc-badge ${a.key}">${badge}</span>${inCart ? `<span class="cart-chip">In cart · ${inCart}</span>` : ""}</div>
           <div class="sc-info"><div class="fam">${esc(p.family)} • ${esc(p.category)}</div><h3>${esc(p.name)}</h3>
-          <div class="sc-bottom"><strong>${peso(p.price)}</strong><span class="go">${p.stock === 0 ? "Unavailable" : "Deduct →"}</span></div></div>
+          <div class="sc-bottom"><strong>${peso(p.price)}</strong><span class="go">${p.stock === 0 ? "Unavailable" : inCart ? `Cart · ${inCart} →` : "Add to cart →"}</span></div></div>
         </article>`;
       })
       .join("");
     $("#scEmpty").hidden = list.length > 0;
     $("#scCount").textContent = `${list.length} fragrance${list.length === 1 ? "" : "s"}`;
+    renderCartSummary();
   }
 
   $("#scSearch").addEventListener("input", (e) => {
@@ -404,6 +435,7 @@
     scCat = e.target.value;
     renderStockControl();
   });
+
   function onCard(e) {
     const card = e.target.closest(".sc-card");
     if (!card) return;
@@ -417,13 +449,12 @@
   $("#scGrid").addEventListener("click", onCard);
   $("#scGrid").addEventListener("keydown", onCard);
 
-  /* ----- stock control panel ----- */
+  /* ----- product quantity dialog ----- */
   const sd = { dlg: $("#stockDialog"), qty: $("#sdQty"), error: $("#sdError") };
   let sdProductId = null;
 
-  function sdQtyValue() {
-    return Number(sd.qty.value);
-  }
+  function sdQtyValue() { return Number(sd.qty.value); }
+
   function sdUpdate() {
     const p = products.find((x) => x.id === sdProductId);
     if (!p) return;
@@ -448,7 +479,8 @@
     $("#sdStock").textContent = p.stock;
     $("#sdPrice").textContent = peso(p.price);
     sd.qty.max = p.stock;
-    sd.qty.value = 1;
+    sd.qty.value = Math.min(p.stock, salesCart.get(id)?.qty || 1);
+    $("#sdCustomer").value = $("#cartCustomer").value || "";
     sdUpdate();
     sd.dlg.showModal();
     sd.qty.select();
@@ -461,50 +493,179 @@
   });
   $("#sdPlus").addEventListener("click", () => {
     const p = products.find((x) => x.id === sdProductId);
+    if (!p) return;
     sd.qty.value = Math.min(p.stock, (sdQtyValue() || 0) + 1);
     sdUpdate();
   });
 
-  $("#sdForm").addEventListener("submit", async (e) => {
+  $("#sdForm").addEventListener("submit", (e) => {
     e.preventDefault();
     const p = products.find((x) => x.id === sdProductId);
     if (!p) return;
     const q = sdQtyValue();
     if (!Number.isInteger(q) || q < 1) return (sd.error.textContent = "Enter a whole number of 1 or more.");
     if (q > p.stock) return (sd.error.textContent = `Only ${p.stock} in stock.`);
+
+    salesCart.set(p.id, { id: p.id, qty: q });
+    const customer = $("#sdCustomer").value.trim();
+    if (customer) $("#cartCustomer").value = customer;
+    sd.dlg.close();
+    renderStockControl();
+    toast(`Added ${q} × ${p.name} to the sales cart.`);
+  });
+
+  /* ----- cart dialog ----- */
+  function renderCartDialog() {
+    const entries = cartEntries();
+    const stats = cartStats();
+    $("#cartCount").textContent = stats.types;
+    $("#cartDialogTypes").textContent = stats.types;
+    $("#cartDialogUnits").textContent = stats.units;
+    $("#cartDialogTotal").textContent = peso(stats.total);
+    $("#cartDialogGrand").textContent = peso(stats.total);
+    $("#cartError").textContent = "";
+
+    $("#cartItems").innerHTML = entries.length
+      ? entries.map(({ product: p, qty }) => `<div class="cart-item" data-id="${p.id}">
+          <img src="${imgOf(p)}" alt="${esc(p.name)}">
+          <div class="cart-item-info"><strong>${esc(p.name)}</strong><small>${esc(p.family)} • ${peso(p.price)} each • ${p.stock} in stock</small></div>
+          <div class="cart-stepper"><button type="button" data-cart-act="minus" aria-label="Decrease ${esc(p.name)}">−</button><strong>${qty}</strong><button type="button" data-cart-act="plus" aria-label="Increase ${esc(p.name)}">+</button></div>
+          <strong class="cart-line-total">${peso(qty * p.price)}</strong>
+          <button type="button" class="cart-remove" data-cart-act="remove" aria-label="Remove ${esc(p.name)}">×</button>
+        </div>`).join("")
+      : `<div class="cart-empty"><span>◇</span><strong>Your sales cart is waiting.</strong><small>Add two or more fragrances—or one fragrance with any quantity—to create a sale.</small></div>`;
+  }
+
+  function openCartDialog() {
+    renderCartDialog();
+    $("#cartDialog").showModal();
+  }
+
+  $("#cartOpen").addEventListener("click", openCartDialog);
+  $("#cartItems").addEventListener("click", (e) => {
+    const button = e.target.closest("[data-cart-act]");
+    if (!button) return;
+    const row = button.closest(".cart-item");
+    const id = Number(row?.dataset.id);
+    const item = salesCart.get(id);
+    const p = products.find((x) => x.id === id);
+    if (!item || !p) return;
+    if (button.dataset.cartAct === "remove") salesCart.delete(id);
+    if (button.dataset.cartAct === "minus") {
+      item.qty -= 1;
+      if (item.qty <= 0) salesCart.delete(id);
+    }
+    if (button.dataset.cartAct === "plus") {
+      if (item.qty >= p.stock) return toast(`Only ${p.stock} of ${p.name} are available.`, "error");
+      item.qty += 1;
+    }
+    renderCartDialog();
+    renderStockControl();
+  });
+
+  function makeOrderId() {
+    const d = new Date();
+    const stamp = `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, "0")}${String(d.getDate()).padStart(2, "0")}-${String(d.getHours()).padStart(2, "0")}${String(d.getMinutes()).padStart(2, "0")}${String(d.getSeconds()).padStart(2, "0")}`;
+    return `MR-${stamp}-${Math.floor(10 + Math.random() * 90)}`;
+  }
+
+  function uniqueOrderId(t) {
+    return t.orderId || `TXN-${String(t.id).padStart(5, "0")}`;
+  }
+
+  function txId(t) {
+    return uniqueOrderId(t);
+  }
+
+  function buildReceiptHtml(receipt) {
+    const rows = receipt.items.map((item) => `<tr><td>${esc(item.name)}<small>${item.qty} × ${peso(item.unitPrice)}</small></td><td>${peso(item.total)}</td></tr>`).join("");
+    return `<div class="receipt-card">
+      <div class="receipt-brand">MAISON <em>RÉVE</em></div>
+      <small class="receipt-kicker">SCENT • SALES RECEIPT</small>
+      <div class="receipt-rule"></div>
+      <div class="receipt-meta"><span>Receipt<br><strong>${esc(receipt.orderId)}</strong></span><span>Date<br><strong>${esc(fmtDateTime(receipt.ts))}</strong></span></div>
+      <div class="receipt-customer"><small>CUSTOMER</small><strong>${esc(receipt.customer || "Walk-in customer")}</strong></div>
+      <table><tbody>${rows}</tbody></table>
+      <div class="receipt-total"><span>TOTAL</span><strong>${peso(receipt.total)}</strong></div>
+      <p class="receipt-note">Thank you for choosing Maison Réve. This receipt records the completed fragrance sale in SCENT.</p>
+    </div>`;
+  }
+
+  function showReceipt(receipt) {
+    $("#receiptPreview").innerHTML = buildReceiptHtml(receipt);
+    $("#receiptDialog").showModal();
+    $("#receiptPrint").onclick = () => printReceipt(receipt);
+  }
+
+  function printReceipt(receipt) {
+    const win = window.open("", "_blank", "width=520,height=760");
+    if (!win) return toast("Please allow pop-ups to print the receipt.", "error");
+    win.document.write(`<!doctype html><html><head><title>${esc(receipt.orderId)} • Maison Réve Receipt</title><meta name="viewport" content="width=device-width,initial-scale=1"><style>
+      *{box-sizing:border-box}body{margin:0;background:#eee7dc;color:#211c18;font:14px Arial,sans-serif}.receipt{width:420px;max-width:94vw;margin:25px auto;background:#fffdf9;padding:34px 30px;box-shadow:0 15px 50px rgba(0,0,0,.12)}.brand{text-align:center;font:30px Georgia,serif;letter-spacing:.16em}.brand em{color:#927751;font-style:italic}.kicker{text-align:center;display:block;color:#927751;letter-spacing:.18em;font-weight:700;margin-top:7px}.rule{height:1px;background:#ddd3c4;margin:22px 0}.meta{display:flex;justify-content:space-between;gap:20px;font-size:12px;color:#756b61}.meta strong{color:#211c18}.customer{margin:18px 0}.customer small{display:block;color:#927751;letter-spacing:.15em;font-weight:700}.customer strong{font:20px Georgia,serif}table{width:100%;border-collapse:collapse;margin-top:18px}td{padding:10px 0;border-bottom:1px solid #eee7dc;vertical-align:top}td:last-child{text-align:right;font-weight:700}td small{display:block;color:#756b61;margin-top:3px}.total{display:flex;justify-content:space-between;align-items:center;margin-top:20px;padding-top:18px;border-top:2px solid #211c18}.total strong{font:26px Georgia,serif;color:#927751}.note{margin:24px 0 0;color:#756b61;text-align:center;line-height:1.6}@media print{body{background:#fff}.receipt{width:100%;max-width:none;margin:0;box-shadow:none}}
+    </style></head><body><div class="receipt">${buildReceiptHtml(receipt).replace(/class="receipt-card"/,'class="receipt"').replace(/receipt-brand/g,'brand').replace(/receipt-kicker/g,'kicker').replace(/receipt-rule/g,'rule').replace(/receipt-meta/g,'meta').replace(/receipt-customer/g,'customer').replace(/receipt-total/g,'total').replace(/receipt-note/g,'note')}</div><script>window.onload=()=>{window.print();setTimeout(()=>window.close(),500)}<\/script></body></html>`);
+    win.document.close();
+  }
+
+  $("#cartForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const entries = cartEntries();
+    if (!entries.length) return ($("#cartError").textContent = "Add at least one fragrance to the sales cart.");
+    for (const { product: p, qty } of entries) {
+      if (qty < 1 || qty > p.stock) {
+        $("#cartError").textContent = `${p.name} only has ${p.stock} in stock. Please adjust the cart.`;
+        renderCartDialog();
+        return;
+      }
+    }
+
+    const stats = cartStats();
+    const customer = $("#cartCustomer").value.trim() || "Walk-in customer";
     const ok = await confirmAction({
-      title: "Deduct product",
-      message: `Deduct ${q} × ${p.name} from the inventory? A sales transaction of ${peso(q * p.price)} will be recorded.`,
-      confirmText: "Confirm Deduct",
+      title: "Complete fragrance sale",
+      message: `Record ${stats.units} unit${stats.units === 1 ? "" : "s"} across ${stats.types} product${stats.types === 1 ? "" : "s"} for ${peso(stats.total)}? Inventory will be updated and the sale will appear in analytics.`,
+      confirmText: "Complete Purchase",
     });
     if (!ok) return;
 
-    // always deduct from the current product record
-    const cur = products.find((x) => x.id === sdProductId);
-    if (!cur || q > cur.stock) return toast("Stock changed — please try again.", "error");
+    const orderId = makeOrderId();
+    const ts = Date.now();
     const before = products;
-    const next = products.map((x) => (x.id === cur.id ? { ...x, stock: x.stock - q, sold: (x.sold || 0) + q } : x));
+    const next = products.map((p) => {
+      const item = salesCart.get(p.id);
+      return item ? { ...p, stock: p.stock - item.qty, sold: (p.sold || 0) + item.qty } : p;
+    });
     if (!Store.saveProducts(next)) {
       Store.saveProducts(before);
-      return toast("Could not save: browser storage is full.", "error");
+      return toast("Could not save the sale: browser storage is full.", "error");
     }
     products = next;
-    const t = Store.addTransaction({
-      pid: cur.id,
-      name: cur.name,
-      qty: q,
-      unitPrice: cur.price,
-      total: q * cur.price,
-      ts: Date.now(),
-      by: me.username,
-    });
-    transactions.push(t);
-    sd.dlg.close();
-    renderStockControl();
-    toast(`Transaction ${txId(t)} recorded: ${q} × ${cur.name} (${peso(t.total)}).`);
-  });
 
-  const txId = (t) => "TXN-" + String(t.id).padStart(5, "0");
+    const receiptItems = entries.map(({ product: oldP, qty }) => {
+      const current = products.find((p) => p.id === oldP.id) || oldP;
+      const t = Store.addTransaction({
+        pid: current.id,
+        name: current.name,
+        qty,
+        unitPrice: current.price,
+        total: qty * current.price,
+        ts,
+        by: me.username,
+        orderId,
+        customer,
+      });
+      transactions.push(t);
+      return { name: current.name, qty, unitPrice: current.price, total: qty * current.price };
+    });
+
+    const receipt = { orderId, ts, customer, items: receiptItems, total: stats.total };
+    salesCart.clear();
+    $("#cartCustomer").value = "";
+    $("#cartDialog").close();
+    renderStockControl();
+    renderAnalytics();
+    toast(`${orderId} recorded — ${stats.types} product types, ${stats.units} units.`);
+    showReceipt(receipt);
+  });
 
   /* =========================================================
      TAB 3 — SALES ANALYTICS
@@ -555,7 +716,7 @@
       week: sumBetween(startOfWeek(now), addDays(startOfWeek(now), 7)),
       year: sumBetween(yr, new Date(now.getFullYear() + 1, 0, 1)),
       total: transactions.reduce((s, t) => s + t.total, 0),
-      count: transactions.length,
+      count: new Set(transactions.map((t) => uniqueOrderId(t))).size,
       yearLabel: String(now.getFullYear()),
     };
   }
@@ -632,6 +793,7 @@
     const rows = transactions.filter((t) => t.ts >= a && t.ts < b);
     const revenue = rows.reduce((s, t) => s + t.total, 0);
     const qty = rows.reduce((s, t) => s + t.qty, 0);
+    const orderIds = new Set(rows.map((t) => uniqueOrderId(t)));
     const map = new Map();
     rows.forEach((t) => {
       const m = map.get(t.pid) || { pid: t.pid, name: t.name, qty: 0, revenue: 0 };
@@ -644,8 +806,8 @@
     return {
       revenue,
       qty,
-      orders: rows.length,
-      avg: rows.length ? revenue / rows.length : 0,
+      orders: orderIds.size,
+      avg: orderIds.size ? revenue / orderIds.size : 0,
       top,
       latest: rows.slice(-60).reverse(),
     };
@@ -696,6 +858,7 @@
   }
 
   function renderAnalytics() {
+    renderVoid(); // keep the void-order panel in sync with the revenue figures
     // KPI cards
     const k = kpiValues();
     const bottle = '<svg viewBox="0 0 120 200"><use href="#bt-a"/></svg>';
@@ -794,7 +957,7 @@
   });
   $("#anChart").addEventListener("mouseleave", () => (tip.hidden = true));
 
-  /* ----- printing the report: PDF / PNG / JPEG ----- */
+  /* ----- printing the report: PDF / JPEG ----- */
   function collectReport() {
     const b = buildBuckets();
     return { b, s: periodStats(b.win), k: kpiValues(), generated: new Date() };
@@ -1043,9 +1206,7 @@
       drawReport(canvas, collectReport());
       const stamp = ymd(new Date());
       const base = `Maison-Reve-Sales-Report-${stamp}`;
-      if (kind === "png") {
-        canvas.toBlob((b) => download(b, base + ".png"), "image/png");
-      } else if (kind === "jpeg") {
+      if (kind === "jpeg") {
         canvas.toBlob((b) => download(b, base + ".jpg"), "image/jpeg", 0.93);
       } else {
         const b64 = canvas.toDataURL("image/jpeg", 0.92).split(",")[1];
@@ -1061,6 +1222,94 @@
     }
   }
   $$("[data-export]").forEach((b) => b.addEventListener("click", () => exportReport(b.dataset.export)));
+
+  /* =========================================================
+     VOID ORDER (inside Sales Analytics)
+     Cancelling / returning an order:
+       1. marks every line of that order as voided (with reason),
+       2. adds the quantities back to inventory (if "return to stock" is ticked),
+       3. lowers each product's "sold" count,
+       4. drops the order from `transactions`, which feeds ALL revenue figures.
+     ========================================================= */
+  let voidQuery = ""; // text typed in the void search box
+  let voidTarget = null; // the order currently shown in the void dialog
+
+  // Group transaction rows (one per product) into whole orders.
+  function groupOrders(rows) {
+    const map = new Map();
+    rows.forEach((t) => {
+      const id = uniqueOrderId(t);
+      const o = map.get(id) || { orderId: id, ts: t.ts, customer: t.customer || "Walk-in customer", items: [], total: 0, voided: !!t.voided, reason: t.voidReason, voidedAt: t.voidedAt, voidedBy: t.voidedBy };
+      o.items.push({ pid: t.pid, name: t.name, qty: t.qty, unitPrice: t.unitPrice, total: t.total });
+      o.total += t.total;
+      map.set(id, o);
+    });
+    return [...map.values()].sort((a, b) => b.ts - a.ts);
+  }
+
+  const orderLine = (o) => o.items.map((i) => `${esc(i.name)} × ${i.qty}`).join(", ");
+
+  // Draw the list of voidable orders and the history of voided ones.
+  function renderVoid() {
+    const all = groupOrders(Store.getTransactions());
+    const q = voidQuery.trim().toLowerCase();
+    const match = (o) => !q || `${o.orderId} ${o.customer} ${o.items.map((i) => i.name).join(" ")}`.toLowerCase().includes(q);
+    const active = all.filter((o) => !o.voided && match(o)).slice(0, 15);
+    const voided = all.filter((o) => o.voided);
+    $("#voidNote").textContent = `${voided.length} voided order${voided.length === 1 ? "" : "s"} • ${peso(voided.reduce((s, o) => s + o.total, 0))} removed from revenue`;
+    $("#voidList").innerHTML = active.length
+      ? active.map((o) => `<div class="void-row" data-order="${esc(o.orderId)}"><div><strong>${esc(o.orderId)}</strong><small>${esc(fmtDateTime(o.ts))} • ${esc(o.customer)}</small><span>${orderLine(o)}</span></div><b>${peso(o.total)}</b><div class="void-actions"><button class="btn small" data-receipt>Receipt</button><button class="btn small danger-outline" data-void>Void</button></div></div>`).join("")
+      : '<div class="empty">No matching orders.</div>';
+    $("#voidHistory").innerHTML = voided.length
+      ? voided.slice(0, 10).map((o) => `<div class="void-row"><div><strong>${esc(o.orderId)}</strong><small>${esc(o.reason || "Voided")} • ${o.voidedAt ? esc(fmtDateTime(o.voidedAt)) : ""}${o.voidedBy ? " • " + esc(o.voidedBy) : ""}</small><span>${orderLine(o)}</span></div><b class="struck">${peso(o.total)}</b></div>`).join("")
+      : '<div class="empty">No voided orders yet.</div>';
+  }
+
+  $("#voidSearch").addEventListener("input", (e) => { voidQuery = e.target.value; renderVoid(); });
+
+  // Row buttons: Receipt (re-open receipt) and Void (open the reason dialog).
+  $("#voidList").addEventListener("click", (e) => {
+    const row = e.target.closest(".void-row");
+    if (!row) return;
+    const o = groupOrders(Store.getTransactions()).find((x) => x.orderId === row.dataset.order);
+    if (!o) return;
+    if (e.target.closest("[data-receipt]")) return showReceipt({ orderId: o.orderId, ts: o.ts, customer: o.customer, items: o.items, total: o.total });
+    if (!e.target.closest("[data-void]")) return;
+    voidTarget = o;
+    $("#voidTitle").textContent = o.orderId;
+    $("#voidSummary").innerHTML = o.items.map((i) => `<div><span>${esc(i.name)} × ${i.qty}</span><b>${peso(i.total)}</b></div>`).join("") + `<div class="void-total"><span>Revenue to remove</span><b>${peso(o.total)}</b></div>`;
+    $("#voidReason").value = "";
+    $("#voidRestock").checked = true;
+    $("#voidExtra").value = "";
+    $("#voidError").textContent = "";
+    $("#voidDialog").showModal();
+  });
+
+  // Confirm the void: update the rows, restock, and refresh every view.
+  $("#voidForm").addEventListener("submit", (e) => {
+    e.preventDefault();
+    const o = voidTarget;
+    if (!o) return;
+    const reason = $("#voidReason").value;
+    if (!reason) return ($("#voidError").textContent = "Please select a reason for voiding this order.");
+    const restock = $("#voidRestock").checked;
+    const rows = Store.getTransactions();
+    rows.forEach((t) => {
+      if (uniqueOrderId(t) !== o.orderId || t.voided) return;
+      Object.assign(t, { voided: true, voidReason: reason, voidNote: $("#voidExtra").value.trim(), voidedAt: Date.now(), voidedBy: me.username, restocked: restock });
+    });
+    const next = products.map((p) => {
+      const qty = o.items.filter((i) => i.pid === p.id).reduce((s, i) => s + i.qty, 0);
+      return qty ? { ...p, stock: restock ? p.stock + qty : p.stock, sold: Math.max(0, (p.sold || 0) - qty) } : p;
+    });
+    if (!Store.saveProducts(next)) return ($("#voidError").textContent = "Could not update the inventory. Please try again.");
+    Store.saveTransactions(rows);
+    products = next;
+    transactions = rows.filter((t) => !t.voided); // revenue now excludes this order
+    $("#voidDialog").close();
+    renderAnalytics();
+    toast(`${o.orderId} voided${restock ? " — items returned to stock" : ""}.`);
+  });
 
   /* =========================================================
      TAB 4 — ACCOUNTS
@@ -1196,18 +1445,6 @@
     Store.saveAccounts(Store.getAccounts().filter((x) => x.id !== id));
     renderAccounts();
     toast(`Account “${a.name}” deleted.`);
-  });
-
-  $("#resetDemo").addEventListener("click", async () => {
-    const ok = await confirmAction({
-      title: "Reset demo data",
-      message: "This restores the sample products, transactions and accounts. Any products you added and sales you recorded will be lost.",
-      confirmText: "Confirm Reset",
-      tone: "danger",
-    });
-    if (!ok) return;
-    Store.reset();
-    location.reload();
   });
 
   /* ---------- start ---------- */
