@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>Maison Réve | SCENT</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+  <div class="ambient a1"></div>
+  <div class="ambient a2"></div>
+  <header class="header">
+    <div class="brand" id="secretLogo" title="Maison Réve — private access" tabindex="0" role="button"
+      aria-label="Maison Réve logo"><img src="assets/logo.svg" alt="Maison Réve"></div><span id="secretClickHint"
+      class="secret-click-hint" aria-hidden="true"></span>
+    <nav><a class="active" href="#home">Home</a><a href="#fragrance">Fragrance</a><a href="#about">About</a></nav>
+    <span class="system-mark">SCENT <b>•</b> Maison Réve</span>
+  </header>
+  <main>
+    <section id="home" class="hero section">
+      <div class="hero-copy">
+        <p class="eyebrow">MAISON RÉVE • FINE FRAGRANCE</p>
+        <h1>A scent that becomes<br><em>part of your story.</em></h1>
+        <p class="lead">Discover a curated collection of refined fragrances created for quiet confidence, memorable
+          moments, and an unmistakable personal signature.</p>
+        <div class="actions"><a class="button" href="#fragrance">Explore Fragrances</a><a class="under"
+            href="#about">Discover Maison Réve →</a></div>
+      </div>
+      <div class="hero-art">
+        <div class="halo"></div>
+        <div class="bottle"><i class="cap"></i><i class="neck"></i>
+          <div class="bottle-body">
+            <div class="bottle-logo" id="heroBottleLogo"><span class="logo-main">MAISON</span><span
+                class="logo-accent">RÉVE</span><small>PARFUM</small></div>
+          </div>
+        </div><span class="spark s1">✦</span><span class="spark s2">✧</span><span class="spark s3">❋</span><i
+          class="scent-line l1"></i><i class="scent-line l2"></i>
+      </div>
+    </section>
+    <section class="best section">
+      <div class="heading center">
+        <p class="eyebrow">THE MAISON EDIT</p>
+        <h2>Our Most Loved Scents</h2>
+        <p>Five fragrances currently leading the Maison Réve collection.</p>
+      </div>
+      <div id="topFive" class="top-grid"></div>
+    </section>
+    <section id="fragrance" class="fragrance section">
+      <div class="heading">
+        <div>
+          <p class="eyebrow">THE FRAGRANCE COLLECTION</p>
+          <h2>Find Your Signature</h2>
+          <p>Browse the collection and select a fragrance to view its complete profile.</p>
+        </div>
+        <div class="count"><strong id="count">50</strong><span>Fragrances</span></div>
+      </div>
+      <div class="tools"><label class="search"><span>⌕</span><input id="search" type="search"
+            placeholder="Search fragrance, family, or notes..."></label><select id="sort">
+          <option value="all">All fragrances</option>
+          <option value="Male">Male</option>
+          <option value="Female">Female</option>
+          <option value="Unisex">Unisex</option>
+          <option value="Preferred by Both">Preferred by Both</option>
+          <option value="low">Price: Low to High</option>
+          <option value="high">Price: High to Low</option>
+          <option value="stock">Stock: Low to High</option>
+        </select></div>
+      <div id="grid" class="product-grid"></div>
+      <div id="empty" class="empty" hidden>
+        <div>◌</div>
+        <h3>No fragrance found</h3>
+        <p>Try another search or category.</p>
+      </div>
+    </section>
+    <section id="about" class="about section">
+      <div class="about-art">
+        <div class="about-bottle"><span class="bottle-logo" id="aboutBottleLogo"><span
+              class="logo-main">MAISON</span><span class="logo-accent">RÉVE</span><small>PARFUM</small></span></div>
+        <b>RÉVE</b>
+      </div>
+      <div class="about-copy">
+        <p class="eyebrow">ABOUT MAISON RÉVE</p>
+        <h2>An intimate world of fragrance.</h2>
+        <p>Maison Réve is a perfume business centered on expressive scents, thoughtful presentation, and a refined
+          fragrance experience. Each collection is selected to offer an elegant choice for different personalities and
+          occasions.</p>
+        <p>Our philosophy is simple: fragrance should feel personal. Whether you prefer something fresh and luminous,
+          warm and woody, or soft and floral, Maison Réve invites you to discover a scent that feels distinctly yours.
+        </p>
+        <div class="facts">
+          <div><small>Business</small><strong>Maison Réve</strong></div>
+          <div><small>Established</small><strong>July 2026</strong></div>
+          <div><small>Collection</small><strong>50+ Scents</strong></div>
+        </div>
+      </div>
+    </section>
+    <section class="contact section">
+      <div class="contact-card">
+        <div>
+          <p class="eyebrow">CONTACT MAISON RÉVE</p>
+          <h2>Let's find your next signature.</h2>
+          <p>For fragrance inquiries, product availability, and business concerns, contact the Maison Réve owner through
+            the details below.</p>
+        </div>
+        <div class="contacts">
+          <div><small>Owner</small><strong>Arren Coyoca</strong></div>
+          <div><small>Location</small><strong>5 Network Ave. Street, Meralco Village, Brgy. Lias, Marilao,
+              Bulacan</strong></div>
+          <div><small>Customers</small><strong>Students & fragrance enthusiasts</strong></div>
+        </div>
+      </div>
+    </section>
+  </main>
+  <footer>
+    <div><strong>Maison Réve</strong><small>© 2026
+        Maison Réve. All rights reserved.</small></div><a href="#home">Back to top ↑</a>
+  </footer>
+  <div id="modal" class="backdrop" aria-hidden="true">
+    <div class="modal"><button id="close">×</button>
+      <div class="modal-img"><img id="mi" alt=""></div>
+      <div class="modal-copy">
+        <p id="mc" class="eyebrow"></p>
+        <h2 id="mn"></h2>
+        <div id="mf" class="family"></div>
+        <p id="md"></p>
+        <div class="notes"><small>NOTES</small><strong id="mnotes"></strong></div>
+        <div class="meta">
+          <div><small>PRICE</small><strong id="mp"></strong></div>
+          <div><small>SIZE</small><strong id="ms"></strong></div>
+          <div><small>STOCK LEFT</small><strong id="mst"></strong></div>
+        </div>
+        <p class="view-only">Product viewing only — no cart, checkout, or POS ordering is available.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- PRIVATE ACCESS (opened by clicking the logo 5 times) -->
+  <div id="lgOverlay" class="lg-overlay" aria-hidden="true">
+    <div class="lg-backdrop"></div>
+    <i class="lg-ring"></i>
+    <p class="lg-opening">Opening private access…</p>
+    <div class="lg-card" role="dialog" aria-modal="true" aria-labelledby="lgTitle">
+      <button type="button" id="lgClose" class="lg-close" aria-label="Close login">×</button>
+      <div class="lg-brand">Maison Réve</div>
+      <p class="lg-eyebrow">RESTRICTED ADMINISTRATIVE ACCESS</p>
+      <h2 id="lgTitle">Welcome back.</h2>
+      <p class="lg-sub">Enter your administrator email and password, then verify the one-time code.</p>
+      <form id="lgForm" novalidate>
+        <label>Email address
+          <input id="lgEmail" type="email" placeholder="admin@maisonreve.com" required autocomplete="username">
+        </label>
+        <label>Password
+          <input id="lgPassword" type="password" placeholder="Enter password" required autocomplete="current-password">
+        </label>
+        <div class="lg-otp-row">
+          <label>OTP verification code
+            <input id="lgOtp" type="text" inputmode="numeric" maxlength="6" placeholder="6-digit code" required autocomplete="one-time-code">
+          </label>
+          <button type="button" id="lgSendOtp" class="lg-secondary">Send OTP</button>
+        </div>
+        <div id="lgOtpStatus" class="lg-otp-status" aria-live="polite"></div>
+        <button type="submit" class="lg-primary">Verify &amp; Sign In</button>
+        <p class="lg-demo"><strong>Demo email:</strong> admin@maisonreve.com &nbsp; <strong>Password:</strong> admin123</p>
+        <div id="lgDemoOtp" class="lg-demo-otp" hidden></div>
+        <p id="lgError" class="lg-error" aria-live="polite"></p>
+      </form>
+    </div>
+  </div>
+  <!-- WELCOME TRANSITION (plays after a successful login) -->
+  <div id="welcome" class="welcome" aria-hidden="true">
+    <div class="welcome-bg"></div>
+    <div class="welcome-inner">
+      <svg class="welcome-bottle" viewBox="0 0 120 200" aria-hidden="true">
+        <rect pathLength="1" x="42" y="6" width="36" height="32" rx="4"/>
+        <rect pathLength="1" x="52" y="38" width="16" height="14"/>
+        <rect pathLength="1" x="20" y="52" width="80" height="140" rx="24"/>
+        <rect pathLength="1" x="34" y="104" width="52" height="46" rx="3"/>
+      </svg>
+      <small>IDENTITY VERIFIED</small>
+      <h2>Welcome back, <em id="welcomeName">admin</em></h2>
+      <p>Preparing your SCENT dashboard…</p>
+      <div class="welcome-bar"><i></i></div>
+    </div>
+  </div>
+  <script src="js/store.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

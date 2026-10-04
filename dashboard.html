@@ -1,0 +1,426 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <title>SCENT | Administrator Dashboard</title>
+    <script>
+      // Only logged-in administrators may see this page.
+      if (sessionStorage.getItem("scentLoggedIn") !== "true")
+        location.replace("index.html");
+    </script>
+    <link rel="stylesheet" href="css/dashboard.css" />
+  </head>
+  <body>
+    <!-- Decorative perfume bottle shapes (re-used across the page) -->
+    <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+      <defs>
+        <symbol id="bt-a" viewBox="0 0 120 200">
+          <g fill="currentColor" fill-opacity=".1" stroke="currentColor" stroke-width="2" stroke-linejoin="round">
+            <rect x="42" y="6" width="36" height="32" rx="4" />
+            <rect x="52" y="38" width="16" height="14" />
+            <rect x="20" y="52" width="80" height="140" rx="24" />
+          </g>
+          <rect x="34" y="104" width="52" height="46" rx="3" fill="none" stroke="currentColor" stroke-width="1.5" opacity=".8" />
+          <path d="M33 86C33 74 40 68 48 65" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" opacity=".5" />
+        </symbol>
+        <symbol id="bt-b" viewBox="0 0 120 200">
+          <g fill="currentColor" fill-opacity=".1" stroke="currentColor" stroke-width="2" stroke-linejoin="round">
+            <circle cx="60" cy="22" r="16" />
+            <rect x="50" y="38" width="20" height="12" />
+            <rect x="34" y="50" width="52" height="144" rx="10" />
+          </g>
+          <path d="M34 128H86" stroke="currentColor" stroke-width="1.5" opacity=".7" />
+          <path d="M44 64V112" stroke="currentColor" stroke-width="3" stroke-linecap="round" opacity=".5" />
+        </symbol>
+        <symbol id="bt-c" viewBox="0 0 120 200">
+          <g fill="currentColor" fill-opacity=".1" stroke="currentColor" stroke-width="2" stroke-linejoin="round">
+            <rect x="46" y="6" width="28" height="24" rx="5" />
+            <rect x="52" y="30" width="16" height="48" />
+            <circle cx="60" cy="134" r="58" />
+          </g>
+          <ellipse cx="60" cy="140" rx="28" ry="20" fill="none" stroke="currentColor" stroke-width="1.5" opacity=".7" />
+          <path d="M24 118C26 100 36 90 48 86" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" opacity=".5" />
+        </symbol>
+      </defs>
+    </svg>
+
+    <!-- Entry / exit curtain (the elegant transition) -->
+    <div class="curtain" id="curtain" aria-hidden="true">
+      <div class="curtain-inner">
+        <svg class="curtain-bottle" viewBox="0 0 120 200"><use href="#bt-a" /></svg>
+        <small id="curtainSmall">MAISON RÉVE</small>
+        <p id="curtainText">Opening your dashboard…</p>
+      </div>
+    </div>
+
+    <!-- Decorative background bottles -->
+    <svg class="deco d1" viewBox="0 0 120 200" aria-hidden="true"><use href="#bt-a" /></svg>
+    <svg class="deco d2" viewBox="0 0 120 200" aria-hidden="true"><use href="#bt-c" /></svg>
+    <svg class="deco d3" viewBox="0 0 120 200" aria-hidden="true"><use href="#bt-b" /></svg>
+
+    <div class="app">
+      <!-- ================= SIDEBAR ================= -->
+      <aside class="sidebar" id="sidebar">
+        <div class="side-brand">
+          <div class="wordmark">MAISON <em>RÉVE</em></div>
+          <small>SCENT • ADMINISTRATOR</small>
+        </div>
+
+        <nav class="side-nav" aria-label="Dashboard tabs">
+          <button class="nav-btn active" data-tab="inventory">
+            <svg viewBox="0 0 24 24"><path d="M3 7l9-4 9 4v10l-9 4-9-4z" /><path d="M3 7l9 4 9-4M12 11v10" /></svg>
+            <span>Inventory</span><i>01</i>
+          </button>
+          <button class="nav-btn" data-tab="stock">
+            <svg viewBox="0 0 24 24"><rect x="9" y="2" width="6" height="4" rx="1" /><rect x="6" y="6" width="12" height="16" rx="4" /><path d="M9.5 14h5" /></svg>
+            <span>Stock Control</span><i>02</i>
+          </button>
+          <button class="nav-btn" data-tab="analytics">
+            <svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2" /></svg>
+            <span>Sales Analytics</span><i>03</i>
+          </button>
+          <button class="nav-btn" data-tab="accounts">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4" /><path d="M4 21c1-5 5-7 8-7s7 2 8 7" /></svg>
+            <span>Accounts</span><i>04</i>
+          </button>
+        </nav>
+
+        <svg class="side-deco" viewBox="0 0 240 200" aria-hidden="true">
+          <use href="#bt-b" x="0" y="30" width="72" height="120" />
+          <use href="#bt-a" x="70" y="0" width="100" height="166" />
+          <use href="#bt-c" x="150" y="40" width="80" height="133" />
+        </svg>
+
+        <div class="side-foot">
+          <button class="logout" id="logoutBtn">
+            <svg viewBox="0 0 24 24"><path d="M9 4H5a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1h4M16 8l4 4-4 4M20 12H9" /></svg>
+            Log out
+          </button>
+          <div class="user">
+            <img id="userPhoto" alt="Administrator photo" />
+            <div>
+              <strong id="userName">admin</strong>
+              <small id="userEmail"></small>
+            </div>
+          </div>
+        </div>
+      </aside>
+      <div class="scrim" id="scrim"></div>
+
+      <!-- ================= MAIN ================= -->
+      <main class="main">
+        <button class="menu-btn" id="menuBtn" aria-label="Open menu">☰</button>
+
+        <!-- 01 INVENTORY -->
+        <section class="tab active" id="tab-inventory">
+          <header class="page-hero">
+            <div>
+              <p class="eyebrow">TAB 01</p>
+              <h1>Inventory</h1>
+              <p>Every fragrance in the Maison Réve collection, with live stock levels and prices.</p>
+            </div>
+            <svg class="hero-bottles" viewBox="0 0 300 200" aria-hidden="true">
+              <use href="#bt-b" x="10" y="40" width="72" height="120" />
+              <use href="#bt-a" x="80" y="10" width="110" height="183" />
+              <use href="#bt-c" x="190" y="50" width="88" height="146" />
+            </svg>
+          </header>
+
+          <div class="panel">
+            <div class="toolbar">
+              <label class="search">
+                <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" /><path d="M20 20l-4-4" /></svg>
+                <input id="invSearch" type="search" placeholder="Search product name…" autocomplete="off" />
+              </label>
+              <span class="muted" id="invCount"></span>
+              <div class="spacer"></div>
+              <button class="btn danger-outline" id="invDeleteSel" disabled>Delete Selected (0)</button>
+              <button class="btn gold" id="invAdd">+ Add Product</button>
+            </div>
+            <div class="table-wrap">
+              <table class="tbl" id="invTable">
+                <thead>
+                  <tr>
+                    <th class="c-check"><input type="checkbox" id="invAll" aria-label="Select all" /></th>
+                    <th>Image</th>
+                    <th>Product name</th>
+                    <th>Category</th>
+                    <th class="num">Stock qty</th>
+                    <th class="num">Retail price</th>
+                    <th>Availability</th>
+                    <th class="actions-h">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="invBody"></tbody>
+              </table>
+              <div class="empty" id="invEmpty" hidden>No products match your search.</div>
+            </div>
+            <p class="hint">Tip: click a row (or its checkbox) to select it, then use <strong>Delete Selected</strong> to remove several products at once.</p>
+          </div>
+        </section>
+
+        <!-- 02 STOCK CONTROL -->
+        <section class="tab" id="tab-stock">
+          <header class="page-hero">
+            <div>
+              <p class="eyebrow">TAB 02</p>
+              <h1>Stock Control</h1>
+              <p>Click a product to deduct units from the inventory. Every deduction is recorded as a sales transaction.</p>
+            </div>
+            <svg class="hero-bottles" viewBox="0 0 300 200" aria-hidden="true">
+              <use href="#bt-c" x="10" y="50" width="88" height="146" />
+              <use href="#bt-a" x="100" y="10" width="110" height="183" />
+              <use href="#bt-b" x="215" y="40" width="72" height="120" />
+            </svg>
+          </header>
+
+          <div class="panel">
+            <div class="toolbar">
+              <label class="search">
+                <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" /><path d="M20 20l-4-4" /></svg>
+                <input id="scSearch" type="search" placeholder="Search fragrance…" autocomplete="off" />
+              </label>
+              <select id="scCat" aria-label="Filter by category">
+                <option value="all">All categories</option>
+                <option>Female</option>
+                <option>Male</option>
+                <option>Unisex</option>
+                <option>Preferred by Both</option>
+              </select>
+              <span class="muted" id="scCount"></span>
+            </div>
+            <div class="sc-grid" id="scGrid"></div>
+            <div class="empty" id="scEmpty" hidden>No fragrances match your search.</div>
+          </div>
+        </section>
+
+        <!-- 03 SALES ANALYTICS -->
+        <section class="tab" id="tab-analytics">
+          <header class="page-hero">
+            <div>
+              <p class="eyebrow">TAB 03</p>
+              <h1>Sales Analytics</h1>
+              <p>Income, best sellers and transactions, updated automatically from Stock Control.</p>
+            </div>
+            <svg class="hero-bottles" viewBox="0 0 300 200" aria-hidden="true">
+              <use href="#bt-a" x="10" y="20" width="100" height="166" />
+              <use href="#bt-c" x="110" y="50" width="88" height="146" />
+              <use href="#bt-b" x="205" y="30" width="72" height="120" />
+            </svg>
+          </header>
+
+          <div class="an-top">
+            <div class="kpis" id="anKpis"></div>
+          </div>
+
+          <div class="panel">
+            <div class="an-head">
+              <div>
+                <h2>Income overview</h2>
+                <p class="muted" id="anRangeLabel"></p>
+              </div>
+              <div class="export">
+                <span>Print report:</span>
+                <button class="btn small" data-export="pdf">PDF</button>
+                <button class="btn small" data-export="png">PNG</button>
+                <button class="btn small" data-export="jpeg">JPEG</button>
+              </div>
+            </div>
+
+            <div class="seg" id="anModes" role="tablist">
+              <button class="active" data-mode="daily">Daily</button>
+              <button data-mode="weekly">Weekly</button>
+              <button data-mode="annual">Annual</button>
+              <button data-mode="custom">Date range</button>
+            </div>
+
+            <div class="an-controls" id="anControls">
+              <label id="anYearWrap" hidden>Year <select id="anYear"></select></label>
+              <span id="anRangeWrap" hidden>
+                <label>From <input type="date" id="anFrom" /></label>
+                <label>To <input type="date" id="anTo" /></label>
+              </span>
+            </div>
+            <p class="error" id="anError"></p>
+
+            <div class="chart" id="anChart"></div>
+          </div>
+
+          <div class="stat-row" id="anStats"></div>
+
+          <div class="two-col">
+            <div class="panel">
+              <h2>Top 5 most selling products</h2>
+              <p class="muted" id="anTopNote"></p>
+              <div id="anTop"></div>
+            </div>
+            <div class="panel">
+              <h2>Latest transactions</h2>
+              <p class="muted" id="anTxNote"></p>
+              <div class="table-wrap short">
+                <table class="tbl compact" id="anTxTable">
+                  <thead>
+                    <tr><th>ID</th><th>Date &amp; time</th><th>Product</th><th class="num">Qty</th><th class="num">Total</th></tr>
+                  </thead>
+                  <tbody id="anTx"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 04 ACCOUNTS -->
+        <section class="tab" id="tab-accounts">
+          <header class="page-hero">
+            <div>
+              <p class="eyebrow">TAB 04</p>
+              <h1>Accounts</h1>
+              <p>Registered administrator accounts. Only the owner can create, edit or delete accounts.</p>
+            </div>
+            <svg class="hero-bottles" viewBox="0 0 300 200" aria-hidden="true">
+              <use href="#bt-b" x="20" y="40" width="72" height="120" />
+              <use href="#bt-c" x="95" y="45" width="88" height="146" />
+              <use href="#bt-a" x="185" y="10" width="100" height="166" />
+            </svg>
+          </header>
+
+          <div class="panel">
+            <div class="toolbar">
+              <strong class="panel-title" id="acCount"></strong>
+              <span class="spacer"></span>
+              <button class="btn gold" id="acAdd" hidden>+ Add Account</button>
+            </div>
+            <p class="ac-note" id="acNote" hidden>You are signed in as an administrator. Only the owner can create, edit or delete accounts.</p>
+            <div class="table-wrap">
+              <table class="tbl">
+                <thead>
+                  <tr><th>Photo</th><th>Name</th><th>Username</th><th>Email</th><th>Registered</th><th>Last login</th><th>Status</th><th class="ac-actions-th" hidden>Actions</th></tr>
+                </thead>
+                <tbody id="acBody"></tbody>
+              </table>
+            </div>
+            <p class="hint">
+              Demo data is stored in this browser only.
+              <button class="link" id="resetDemo">Reset demo data</button>
+            </p>
+          </div>
+        </section>
+
+        <footer class="foot">© <span id="year"></span> Maison Réve • SCENT — Stock Control with Earnings Notification Tracker</footer>
+      </main>
+    </div>
+
+    <!-- ================= DIALOGS ================= -->
+    <!-- Add / Edit product -->
+    <dialog id="productDialog">
+      <form class="dlg wide" id="pfForm" novalidate>
+        <button type="button" class="dlg-x" data-close aria-label="Close">×</button>
+        <p class="eyebrow" id="pfEyebrow">NEW PRODUCT</p>
+        <h2 id="pfTitle">Add Product</h2>
+        <div class="pf-grid">
+          <div class="pf-photo">
+            <div class="pf-preview"><img id="pfPreview" alt="" hidden /><span id="pfPreviewEmpty">No image yet</span></div>
+            <label class="btn small upload">Upload image<input type="file" id="pfImage" accept="image/*" hidden /></label>
+            <small class="muted">PNG, JPG or SVG. It is resized automatically.</small>
+          </div>
+          <div class="pf-fields">
+            <label class="full">Product name *<input id="pfName" maxlength="40" placeholder="e.g. Éclat" /></label>
+            <label>Category *<select id="pfCategory"></select></label>
+            <label>Scent family *<select id="pfFamily"></select></label>
+            <label>Retail price (₱) *<input id="pfPrice" type="number" min="1" step="1" placeholder="2499" /></label>
+            <label>Stock quantity *<input id="pfStock" type="number" min="0" step="1" placeholder="12" /></label>
+            <label>Bottle size<input id="pfSize" maxlength="12" placeholder="50 ml" /></label>
+            <label>Key notes<input id="pfNotes" maxlength="80" placeholder="bergamot, jasmine, vanilla" /></label>
+            <label class="full">Description<textarea id="pfDesc" rows="3" maxlength="260" placeholder="Describe the fragrance…"></textarea></label>
+          </div>
+        </div>
+        <p class="error" id="pfError"></p>
+        <div class="dlg-actions">
+          <button type="button" class="btn" data-close>Cancel</button>
+          <button type="submit" class="btn gold" id="pfSubmit">Save Product</button>
+        </div>
+      </form>
+    </dialog>
+
+    <!-- Add / Edit account (owner only) -->
+    <dialog id="accountDialog">
+      <form class="dlg acct" id="acForm" novalidate>
+        <button type="button" class="dlg-x" data-close aria-label="Close">×</button>
+        <p class="eyebrow" id="acEyebrow">NEW ACCOUNT</p>
+        <h2 id="acTitle">Add Account</h2>
+        <div class="ac-grid">
+          <div class="ac-photo">
+            <div class="ac-preview"><img id="acPreview" alt="Account photo" /></div>
+            <label class="btn small upload">Upload photo<input type="file" id="acPhoto" accept="image/*" hidden /></label>
+            <small class="muted">Optional.</small>
+          </div>
+          <div class="pf-fields">
+            <label class="full">Full name *<input id="acName" maxlength="40" placeholder="e.g. Isabelle Navarro" /></label>
+            <label>Username *<input id="acUser" maxlength="20" placeholder="isabelle.n" autocomplete="off" /></label>
+            <label>Email address *<input id="acEmail" type="email" maxlength="60" placeholder="name@maisonreve.com" autocomplete="off" /></label>
+            <label class="full"><span id="acPassLabel">Password *</span><input id="acPass" type="password" maxlength="40" placeholder="At least 6 characters" autocomplete="new-password" /></label>
+          </div>
+        </div>
+        <p class="error" id="acError"></p>
+        <div class="dlg-actions">
+          <button type="button" class="btn" data-close>Cancel</button>
+          <button type="submit" class="btn gold" id="acSubmit">Save Account</button>
+        </div>
+      </form>
+    </dialog>
+
+    <!-- Stock control panel -->
+    <dialog id="stockDialog">
+      <form class="dlg stock" id="sdForm" novalidate>
+        <button type="button" class="dlg-x" data-close aria-label="Close">×</button>
+        <div class="sd-img"><img id="sdImg" alt="" /></div>
+        <div class="sd-body">
+          <p class="eyebrow">STOCK CONTROL</p>
+          <h2 id="sdName"></h2>
+          <p class="muted" id="sdMeta"></p>
+          <div class="sd-facts">
+            <div><small>In stock</small><strong id="sdStock"></strong></div>
+            <div><small>Unit price</small><strong id="sdPrice"></strong></div>
+          </div>
+          <label class="sd-qty">Quantity to deduct
+            <div class="stepper">
+              <button type="button" id="sdMinus" aria-label="Decrease">−</button>
+              <input id="sdQty" type="number" min="1" step="1" value="1" inputmode="numeric" />
+              <button type="button" id="sdPlus" aria-label="Increase">+</button>
+            </div>
+          </label>
+          <div class="sd-sum">
+            <div><span>Units to deduct</span><strong id="sdUnits">1</strong></div>
+            <div><span>Total sum</span><strong id="sdTotal"></strong></div>
+            <div><span>Remaining after deduction</span><strong id="sdAfter"></strong></div>
+          </div>
+          <p class="error" id="sdError"></p>
+          <div class="dlg-actions">
+            <button type="button" class="btn" data-close>Cancel</button>
+            <button type="submit" class="btn dark" id="sdDeduct">Deduct Product</button>
+          </div>
+        </div>
+      </form>
+    </dialog>
+
+    <!-- Generic confirmation -->
+    <dialog id="confirmDialog">
+      <div class="dlg small">
+        <p class="eyebrow" id="cfEyebrow">PLEASE CONFIRM</p>
+        <h2 id="cfTitle"></h2>
+        <p id="cfMessage"></p>
+        <div class="dlg-actions">
+          <button type="button" class="btn" id="cfCancel">Cancel</button>
+          <button type="button" class="btn dark" id="cfOk">Confirm</button>
+        </div>
+      </div>
+    </dialog>
+
+    <div class="tooltip" id="tip" hidden></div>
+    <div class="toasts" id="toasts" aria-live="polite"></div>
+
+    <script src="js/store.js"></script>
+    <script src="js/dashboard.js"></script>
+  </body>
+</html>
